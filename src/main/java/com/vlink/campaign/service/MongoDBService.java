@@ -37,7 +37,7 @@ public class MongoDBService {
     }
 
     // updating data in document
-    public void update(String collectionName, Map<String, Object> data, String id) {
+    public void update(String collectionName, Map<String, String> data, String id) {
 
         DB db = getConnection().getDB(DB_NAME);
         DBCollection collection = db.getCollection(collectionName);

@@ -40,7 +40,6 @@ public class CampaignController {
             statuscode = 500;
             log.error("This is the error message" +e);
         }
-
         jsonObject.put("status", status);
         jsonObject.put("message", message);
         log.debug("response" +jsonObject);
@@ -53,6 +52,7 @@ public class CampaignController {
     @Produces("application/json")
     @Path("/{id}")
     public Response getCampaign(@PathParam("id") String id) {
+        log.info("get campaign via id method called");
         int statuscode = 200;
         boolean status = true;
         String message = "Campaign fetch successfuly";
@@ -65,11 +65,11 @@ public class CampaignController {
             status = false;
             message = "Unable to process request";
             statuscode = 500;
-            System.out.println(e);
+            log.error("this is the error message" +e);
         }
         jsonObject.put("status", status);
         jsonObject.put("message", message);
-        System.out.println(jsonObject.toJSONString());
+        log.debug("respone" +jsonObject);
         Response response = Response.status(statuscode).entity(jsonObject.toJSONString()).build();
         return response;
     }
@@ -78,6 +78,7 @@ public class CampaignController {
     @Produces("application/json")
     @Consumes("application/x-www-form-urlencoded")
     public Response postCampaign(MultivaluedMap<String, String> campaignData) {
+        log.info("post method called ");
         int statuscode = 200;
         boolean status = true;
         String message = "Campaign created successfuly";
@@ -93,46 +94,85 @@ public class CampaignController {
             status = false;
             message = "Unable to process request";
             statuscode = 500;
+            log.error("this is the error message" +e);
         }
         jsonObject.put("status", status);
         jsonObject.put("message", message);
+        log.debug("respone" +jsonObject);
         Response response = Response.status(statuscode).entity(jsonObject.toJSONString()).build();
         return response;
     }
 
-	/*@PUT
+	@PUT
 	@Produces("application/json")
 	@Consumes("application/x-www-form-urlencoded")
 	@Path("/{id}")
 	public Response putCampaign(MultivaluedMap<String, String> campaignData, @PathParam("id") String id) {
+        log.info("put method called");
 		int statuscode = 200;
 		boolean status = true;
-		String message = "Campaign created successfuly";
+		String message = "Campaign updated successfuly";
 		JSONObject jsonObject = new JSONObject();
-		jsonObject.put("id", id);
+
 		try {
-			Map<String, String> data = new HashMap<String, String>();
+            MongoDBService mongoDBService = new MongoDBService();
+            DBObject dbObject = mongoDBService.findById("campaign", id);
+            Map<String, String> data = new HashMap<String, String>();
 			for (Map.Entry<String, List<String>> entry : campaignData.entrySet()) {
 				data.put(entry.getKey(), entry.getValue().get(0));
+                mongoDBService.update("campaign", data, id);
 			}
-			MongoDBService mongodbservice = new MongoDBService();
-			mongodbservice.update("campaign", data);
 		} catch (Exception e) {
 			// TODO: handle exception
 			status = false;
 			message = "Unable to process request";
 			statuscode = 500;
-
+			log.error("error mesaage" +e);
 		}
 		jsonObject.put("status", status);
 		jsonObject.put("message", message);
+		log.debug("response" +jsonObject);
 		Response response = Response.status(statuscode).entity(jsonObject.toJSONString()).build();
 		return response;
 	}
 
 	@DELETE
 	@Produces("application/json")
-	@Path("/{id}")*/
-
-
+	@Path("/{id}")
+    public Response deleteCampaign(@PathParam("id") String id) {
+        log.info("delete method called");
+        int statuscode = 200;
+        boolean status = true;
+        String message = "campaign deleted successfuly";
+     JSONObject jsonObject = new JSONObject();
+     try {
+         MongoDBService mongoDBService = new MongoDBService();
+         DBObject dbObject = mongoDBService.findById("campaign", id);
+         mongoDBService.delete("campaign", id);
+     } catch (Exception e){
+         status = false;
+         statuscode = 500;
+         message = "process request failed";
+         log.error("error message" +e);
+     }
+     jsonObject.put("status", status);
+     jsonObject.put("message", message);
+     log.debug("response" +jsonObject);
+     Response response = Response.status(statuscode).entity(jsonObject.toJSONString()).build();
+     return response;
+    }
+    /*
+    @DELETE
+    @Produces("application/json")
+    public Response deleteCampaign() {
+        JSONObject jsonObject = new JSONObject();
+        try {
+            MongoDBService mongoDBService = new MongoDBService();
+            mongoDBService.delete();
+        } catch (Exception e) {
+            System.out.print("unable to delete");
+        }
+        Response response = Response.status(200).entity(jsonObject.toJSONString()).build();
+        return  response;
+    }*/
 }
