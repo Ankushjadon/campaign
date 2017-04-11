@@ -90,6 +90,5 @@ public class MongoDBService {
             mongoClient = new MongoClient(new MongoClientURI(URI));
         }
         return mongoClient;
-
     }
 }
