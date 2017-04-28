@@ -7,35 +7,71 @@ package com.vlink.campaign.service;
 import java.util.List;
 import java.util.Map;
 
-import org.bson.types.ObjectId;
-
 import com.eaio.uuid.UUID;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientURI;
+import com.mongodb.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MongoDBService {
-
+    static Logger logger = LoggerFactory.getLogger(MongoDBService.class);
     private static final String URI = "mongodb://localhost/campaign";
     private static final String DB_NAME = "campaign";
     private MongoClient mongoClient;
 
-    // inserting data in document
-    public void insert(String collectionName, Map<String, String> data) {
+    public String insert(String collectionName, Map<String, String> data) {
         DB db = getConnection().getDB(DB_NAME);
         DBCollection collection = db.getCollection(collectionName);
-        System.out.println("Collection mycol selected successfully");
+        logger.info("collection mycol selected successfully");
+        // System.out.println("Collection mycol selected successfully");
         UUID uuid = new UUID();
+        logger.info("uuid is " + uuid.toString());
         BasicDBObject doc = new BasicDBObject(data);
-        doc.put("_id", uuid.toString());
+     //   BasicDBObject basicDBObject = new BasicDBObject();
+       String id = uuid.toString();
+        doc.put("_id",id );
         collection.insert(doc);
-        System.out.println("Document inserted successfully");
-
+        logger.info("document inserted successfully");
+        //  System.out.println("Document inserted successfully");
+        return id;
     }
 
+    public void insertFileData(String filedata, List<BasicDBObject> data) {
+        DB db = getConnection().getDB(DB_NAME);
+        DBCollection collection = db.getCollection(filedata);
+        logger.info("collection filedata selected successfully");
+        // System.out.println("Collection mycol selected successfully");
+     //   UUID uuid = new UUID();
+     //   logger.info("uuid is " + uuid.toString());
+      //  JSON json =new JSON();
+      //  BasicDBList basicDBList = new BasicDBList(data);
+      //  BasicDBObject doc = new BasicDBObject(data);
+        //   BasicDBObject basicDBObject = new BasicDBObject();
+     //   doc.put("_id", uuid.toString());
+     //   doc.put();
+        collection.insert(data);
+        logger.info("file data inserted successfully");
+        //  System.out.println("Document inserted successfully");
+
+    }
+//
+//    // inserting data in document
+//    public void insert(String collectionName, Map<String, String> data) {
+//        DB db = getConnection().getDB(DB_NAME);
+//        DBCollection collection = db.getCollection(collectionName);
+//        logger.info("collection mycol selected successfully");
+//       // System.out.println("Collection mycol selected successfully");
+//        UUID uuid = new UUID();
+//        logger.info("uuid is " + uuid.toString());
+//        BasicDBObject doc = new BasicDBObject(data);
+//        doc.put("_id", uuid.toString());
+//        collection.insert(doc);
+//        logger.info("document inserted successfully");
+//      //  System.out.println("Document inserted successfully");
+//
+//    }
+//
+//
+//
     // updating data in document
     public void update(String collectionName, Map<String, String> data, String id) {
 
@@ -70,7 +106,8 @@ public class MongoDBService {
 
         DB db = getConnection().getDB(DB_NAME);
         DBCollection collection = db.getCollection(collectionName);
-        System.out.println("Collection mycol selected successfully");
+        logger.info("collection mycol selected successfully");
+      //  System.out.println("Collection mycol selected successfully");
         BasicDBObject query = new BasicDBObject("_id", id);
         DBObject dbObject = collection.findOne(query);
         return dbObject;
