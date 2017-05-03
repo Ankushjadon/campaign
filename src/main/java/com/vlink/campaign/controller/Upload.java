@@ -2,9 +2,9 @@ package com.vlink.campaign.controller;
 
 
 import com.eaio.uuid.UUID;
-import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.vlink.campaign.com.vlink.util.AppConfig;
+import com.vlink.campaign.scheduler.SchedulerJob;
 import com.vlink.campaign.service.MongoDBService;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
@@ -22,7 +22,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.*;
-import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -32,7 +31,9 @@ import java.util.*;
 public class Upload {
 
     static Logger logger = LoggerFactory.getLogger(Upload.class);
-    String campaignId;
+//    public Long scheduleDateTime;
+//    public String campaignId;
+
     @POST
     @Path("/upload")
     @Consumes({MediaType.MULTIPART_FORM_DATA, MediaType.APPLICATION_JSON})
@@ -40,23 +41,14 @@ public class Upload {
     public Response uploadFile(@FormDataParam("data") FormDataBodyPart data,
                                @FormDataParam("file") InputStream uploadedInputStream,
                                @FormDataParam("file") FormDataContentDisposition fileDetail) {
-        logger.info("post method called ");
+        logger.info("post method called for uploading campaigndata and filedata");
         logger.info(data.getValue());
-      //  AppConfig appConfig = new AppConfig();
        String uploadFolderPath = AppConfig.uploadFilePath;
         JSONParser jsonParser = new JSONParser();
-      //  String uploadFolderPath = (String) appConfig.g
-        String uploadedFileLocation = uploadFolderPath
-                + System.currentTimeMillis() + "_" + fileDetail.getFileName();
+        String uploadedFileFolder = System.currentTimeMillis() + "_" + fileDetail.getFileName();
 
         // save it
-        System.out.println("file upload to" +uploadedFileLocation);
-
-        //String output = "File uploaded to : " + uploadedFileLocation;
-        logger.info("file uploaded successfully");
-        // logger.debug(emp.getData());
-        //  return Response.status(200).entity(output).build();
-
+        logger.debug("file upload to" +uploadedFileFolder);
         int statuscode = 200;
         boolean status = true;
         String message = "Campaign created successfuly";
@@ -67,26 +59,28 @@ public class Upload {
           //  JSONParser jsonParser = new JSONParser();
             JSONObject jsonObject1 = (JSONObject) jsonParser.parse(data.getValue());
             JSONObject jsonObject2 = new JSONObject();
-            String name = (String) jsonObject1.get("name");
-//           String CampaignDescription = (String)jsonObject1.get("CampaignDescription");
-//           String CampaignDomain = (String) jsonObject1.get("CampaignDomain");
-//            String CampaignType =(String) jsonObject1.get("CampaignType");
-//            Date EndDateTime =(Date) jsonObject1.get("EndDateTime");
-//            Date StartDateTime =(Date) jsonObject1.get("StartDateTime");
-//            Array rules = (Array) jsonObject1.get("rules");
-//
-//            jsonObject2.put("rules", rules);
-//            jsonObject2.put("CampaignDescription", CampaignDescription);
-//            jsonObject2.put("CampaignDomain", CampaignDomain);
-//            jsonObject2.put("CampaignType", CampaignType);
-//            jsonObject2.put("EndDateTime", EndDateTime);
-//            jsonObject2.put("StartDateTime", StartDateTime);
-            jsonObject2.put("name", name);
-            jsonObject2.put("uploadedFileLocation", uploadedFileLocation);
+//            String name = (String) jsonObject1.get("name");
+//            jsonObject2.put("name", name);
+           String campaignDescription = (String)jsonObject1.get("campaignDescription");
+           String campaignMessage = (String) jsonObject1.get("campaignMessage");
+           String campaignType =(String) jsonObject1.get("campaignType");
+
+           Long scheduleDateTime =(Long) jsonObject1.get("scheduleDateTime");
+            JSONArray rules = (JSONArray) jsonObject1.get("rules");
+
+            jsonObject2.put("campaignDescription", campaignDescription);
+            jsonObject2.put("campaignMessage", campaignMessage);
+            jsonObject2.put("campaignType", campaignType);
+            jsonObject2.put("scheduleDateTime", scheduleDateTime);
+            jsonObject2.put("rules", rules);
+            jsonObject2.put("uploadedFileFolder", uploadedFileFolder);
             logger.info(jsonObject2.toJSONString());
             MongoDBService mongodbservice = new MongoDBService();
-            campaignId = mongodbservice.insert("campaign", jsonObject2);
-
+            String campaignId = mongodbservice.insert("campaign", jsonObject2);
+            SchedulerJob schedulerJob = new SchedulerJob();
+            String uploadedFileLocation = uploadFolderPath +uploadedFileFolder;
+            writeToFile(uploadedInputStream, uploadedFileLocation, campaignId);
+            schedulerJob.schedule(campaignId, scheduleDateTime);
         } catch (Exception e) {
             e.printStackTrace();
             status = false;
@@ -97,7 +91,7 @@ public class Upload {
         jsonObject.put("status", status);
         jsonObject.put("message", message);
         logger.debug("respone" + jsonObject);
-        writeToFile(uploadedInputStream, uploadedFileLocation);
+        logger.info("file uploaded successfully");
         Response response = Response.status(statuscode).entity(jsonObject.toJSONString()).build();
         return response;
 
@@ -105,7 +99,7 @@ public class Upload {
 
     // save uploaded file to new location
     public void writeToFile(InputStream uploadedInputStream,
-                             String uploadedFileLocation) {
+                             String uploadedFileLocation, String campaignId) {
 
         MongoDBService mongoDBService = new MongoDBService();
         OutputStream out = null;
@@ -117,8 +111,6 @@ public class Upload {
         }
         int read = 0;
         byte[] bytes = new byte[1024];
-        JSONObject jsonObject = new JSONObject();
-        JSONArray jsonArray = new JSONArray();
         try {
             while ((read = uploadedInputStream.read(bytes)) != -1) {
                 out.write(bytes, 0, read);
@@ -141,33 +133,25 @@ public class Upload {
             headerLine = br.readLine();
             System.out.println(headerLine);
             header=headerLine.split(cvsSplitBy);
-            BasicDBObject basicDBObject1 = new BasicDBObject();
-         //   BasicDBList objectsList = new BasicDBList();
             List<BasicDBObject> basicDBObjects = new ArrayList<>();
             while ((line = br.readLine()) != null) {
-                // use comma as separator
-              //  JSONObject basicDBObject = new JSONObject();
                 BasicDBObject basicDBObject = new BasicDBObject();
                 UUID uuid = new UUID();
-            //    basicDBObject.put("_id", uuid.toString());
-             //   basicDBObject.put("campaignId", campaignId);
-                 data  = line.split(cvsSplitBy);
+                basicDBObject.put("_id", uuid.toString());
+                basicDBObject.put("campaignId", campaignId);
+                 data  = line.split(",", header.length);
                  for(int n=0;n<header.length;n++) {
                      basicDBObject.put(header[n], data[n]);
                  }
-               // jsonObject.put(header[1],data[1]);
-            //    jsonArray.add(jsonObject);
-               // int batch;
-                basicDBObjects.add(basicDBObject);
+                    basicDBObjects.add(basicDBObject);
 
                 if(basicDBObjects.size()==1000) {
-                  //  basicDBObject1.put("objectList", basicDBObjects);
                     mongoDBService.insertFileData("filedata", basicDBObjects);
+                    basicDBObjects.clear();
                 }
                 out.flush();
                 out.close();
             }
-         //   basicDBObject1.put("objectList", basicDBObjects);
             mongoDBService.insertFileData("filedata", basicDBObjects);
         } catch (IOException e) {
             e.printStackTrace();

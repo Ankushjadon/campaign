@@ -39,18 +39,9 @@ public class MongoDBService {
         DB db = getConnection().getDB(DB_NAME);
         DBCollection collection = db.getCollection(filedata);
         logger.info("collection filedata selected successfully");
-        // System.out.println("Collection mycol selected successfully");
-     //   UUID uuid = new UUID();
-     //   logger.info("uuid is " + uuid.toString());
-      //  JSON json =new JSON();
-      //  BasicDBList basicDBList = new BasicDBList(data);
       //  BasicDBObject doc = new BasicDBObject(data);
-        //   BasicDBObject basicDBObject = new BasicDBObject();
-     //   doc.put("_id", uuid.toString());
-     //   doc.put();
         collection.insert(data);
         logger.info("file data inserted successfully");
-        //  System.out.println("Document inserted successfully");
 
     }
 //
@@ -107,7 +98,6 @@ public class MongoDBService {
         DB db = getConnection().getDB(DB_NAME);
         DBCollection collection = db.getCollection(collectionName);
         logger.info("collection mycol selected successfully");
-      //  System.out.println("Collection mycol selected successfully");
         BasicDBObject query = new BasicDBObject("_id", id);
         DBObject dbObject = collection.findOne(query);
         return dbObject;
